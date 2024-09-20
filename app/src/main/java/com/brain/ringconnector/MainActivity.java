@@ -35,11 +35,15 @@ public class MainActivity extends AppCompatActivity {
     private ArrayAdapter adapter;
     private List<String> itemList;
     private MainActivity thisMainActivity;
+    private SensorDataSource dataSource;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         Log.i(TAG,"onCreate");
+
+        dataSource = new SensorDataSource(this);
+        dataSource.open();
 
         thisMainActivity = this;
 
@@ -96,15 +100,6 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        // Set click listener - duplicate code?
-//        scannedDeviceslistView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-//            @Override
-//            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-//                String selectedItem = itemList.get(position);
-//                Toast.makeText(MainActivity.this, "Clicked: " + selectedItem, Toast.LENGTH_SHORT).show();
-//            }
-//        });
-
         exitButton = findViewById(R.id.exitButton);
         exitButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -144,6 +139,21 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    // Method to handle received sensor data
+    public void onSensorDataReceived(SensorData data) {
+        dataSource.insertSensorData(data);
+        // You can also update UI or perform other operations here
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (dataSource != null) {
+            dataSource.close();
+        }
+        // Make sure to properly close the Bluetooth connection as well
+    }
+
     private void requestBluetoothPermissions() {
         Log.i(TAG,"requestBluetoothPermissions");
         requestPermissions(
@@ -173,6 +183,7 @@ public class MainActivity extends AppCompatActivity {
         Log.i(TAG,"BTConnectThread allocated next");
         BTConnectThread btConnectThread = new BTConnectThread(mBluetoothAdapter);
         Log.i(TAG,"BTConnectThread created");
+        btConnectThread.setOnDataReceivedListener(this::onSensorDataReceived);
         btConnectThread.start();
         Log.i(TAG,"BTConnectThread started");
     }
@@ -181,39 +192,4 @@ public class MainActivity extends AppCompatActivity {
         itemList.add(item);
         adapter.notifyDataSetChanged();
     }
-
-//    public void onActivityResult(int requestCode, int resultCode, Intent data) {
-//        Log.i(TAG,"onActivityResult:requestCode "+requestCode+" :resultCode "+resultCode+" :IntentAction"+data.getAction());
-////        switch (requestCode) {
-////            case REQUEST_CONNECT_DEVICE_SECURE:
-////                // When DeviceListActivity returns with a device to connect
-////                if (resultCode == Activity.RESULT_OK) {
-////                    connectDevice(data, true);
-////                }
-////                break;
-////            case REQUEST_CONNECT_DEVICE_INSECURE:
-////                // When DeviceListActivity returns with a device to connect
-////                if (resultCode == Activity.RESULT_OK) {
-////                    connectDevice(data, false);
-////                }
-////                break;
-////            case REQUEST_ENABLE_BT:
-////                // When the request to enable Bluetooth returns
-////                if (resultCode == Activity.RESULT_OK) {
-////                    // Bluetooth is now enabled, so set up a chat session
-////                    setupChat();
-////                } else {
-////                    // User did not enable Bluetooth or an error occurred
-////                    Log.d(TAG, "BT not enabled");
-////                    FragmentActivity activity = getActivity();
-////                    if (activity != null) {
-////                        Toast.makeText(activity, R.string.bt_not_enabled_leaving,
-////                                Toast.LENGTH_SHORT).show();
-////                        activity.finish();
-////                    }
-////                }
-////            }
-//        }
-
-
-    }
+}
